@@ -574,7 +574,7 @@
     </style>
   </head>
   <body>
-    <audio id="bgm" src="./bgm.mp4" loop preload="auto"></audio>
+    <audio id="bgm" src="./bgm.mp4" loop preload="auto" autoplay muted playsinline></audio>
     <div id="miniMenu" class="mini-menu">
       <button id="miniMenuTrigger" class="mini-menu-trigger" aria-label="open menu">menu</button>
       <div id="miniMenuPanel" class="mini-menu-panel" aria-hidden="true">
@@ -775,6 +775,7 @@
       const audioState = {
         enabled: true,
         blocked: false,
+        userActivated: false,
       };
       const typewriterState = {
         lines: [
@@ -825,6 +826,7 @@
       async function tryPlayAudio() {
         if (!audioState.enabled) return;
         bgmEl.volume = 0.66;
+        bgmEl.muted = !audioState.userActivated;
         try {
           await bgmEl.play();
           audioState.blocked = false;
@@ -833,12 +835,22 @@
         }
       }
 
+      function unlockAudioFromGesture() {
+        if (audioState.userActivated) return;
+        audioState.userActivated = true;
+        if (!audioState.enabled) return;
+        bgmEl.muted = false;
+        tryPlayAudio();
+      }
+
       function setAudioEnabled(enabled) {
         audioState.enabled = enabled;
         if (enabled) {
+          bgmEl.muted = !audioState.userActivated;
           tryPlayAudio();
         } else {
           bgmEl.pause();
+          bgmEl.muted = true;
         }
         updateAudioToggle();
       }
@@ -1459,6 +1471,7 @@
         (e) => {
           setCursorPosition(e.clientX, e.clientY);
           bendCursorOnce();
+          unlockAudioFromGesture();
           if (audioState.enabled && audioState.blocked) {
             tryPlayAudio();
           }
@@ -1488,6 +1501,7 @@
       window.addEventListener(
         "wheel",
         (e) => {
+          unlockAudioFromGesture();
           triggerScrollFx(e.deltaY);
           if (audioState.enabled && audioState.blocked) {
             tryPlayAudio();
@@ -1597,6 +1611,7 @@
       });
 
       window.addEventListener("keydown", (e) => {
+        unlockAudioFromGesture();
         if (audioState.enabled && audioState.blocked) {
           tryPlayAudio();
         }
