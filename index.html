@@ -1688,7 +1688,7 @@
         setAudioEnabled(!audioState.enabled);
       });
       nextPageBtnEl.addEventListener("click", () => {
-        window.location.href = "./spot4.html";
+        window.location.href = "./spot4.html?from=index";
       });
       miniMenuTriggerEl.addEventListener("click", () => {
         setMiniMenuOpen(!miniMenuEl.classList.contains("open"));
@@ -1708,7 +1708,7 @@
           return;
         }
         if (link === "spot4-page") {
-          window.location.href = "./spot4.html";
+          window.location.href = "./spot4.html?from=index";
           return;
         }
         const spot = target.dataset.spot || "";

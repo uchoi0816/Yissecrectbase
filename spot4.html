@@ -683,6 +683,10 @@
     </button>
     <button id="lastPageBtn" class="page-link-btn last-page-btn" aria-label="go to previous page">last page</button>
     <script>
+      const spot4From = new URLSearchParams(window.location.search).get("from");
+      if (spot4From !== "index") {
+        window.location.replace("./index.html");
+      }
       const canvas = document.getElementById("stage");
       const bgmEl = document.getElementById("bgm");
       const audioToggleEl = document.getElementById("audioToggle");
