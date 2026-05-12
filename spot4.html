@@ -1,0 +1,1740 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voxel 3D Sprites</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        min-height: 100%;
+        cursor: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="), none !important;
+      }
+      body {
+        overflow-x: hidden;
+        overflow-y: auto;
+        background-color: #050914;
+        cursor: none;
+      }
+      body,
+      body *,
+      body *::before,
+      body *::after {
+        cursor: none !important;
+      }
+      .bg-image {
+        width: 100vw;
+        height: auto;
+        display: block;
+        margin: 0;
+        position: relative;
+        z-index: 0;
+        filter: contrast(1.14) saturate(1.12) brightness(1.04);
+      }
+      canvas {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        z-index: 2;
+        cursor: none;
+      }
+      .tip {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        color: #d2deff;
+        font: 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        opacity: 0.85;
+        letter-spacing: 0.03em;
+        pointer-events: none;
+        user-select: none;
+        z-index: 3;
+      }
+      .logo-title {
+        position: fixed;
+        left: 50%;
+        top: 28px;
+        transform: translateX(-50%);
+        z-index: 6;
+        white-space: nowrap;
+        pointer-events: none;
+        user-select: none;
+        animation: logoFloat 5.2s ease-in-out infinite;
+      }
+      .logo-title .word {
+        display: inline-block;
+        margin: 0 8px;
+      }
+      .logo-title .ch {
+        display: inline-block;
+        font-family: "Arial Black", "Impact", "Comic Sans MS", sans-serif;
+        font-size: clamp(42px, 6.2vw, 92px);
+        font-weight: 900;
+        line-height: 0.9;
+        margin-right: -0.04em;
+        transform-origin: 50% 70%;
+        color: #fff;
+        text-shadow:
+          -3px -3px 0 #111,
+          3px -3px 0 #111,
+          -3px 3px 0 #111,
+          3px 3px 0 #111,
+          0 4px 0 #111;
+      }
+      .logo-title .ch:nth-child(odd) {
+        transform: rotate(-5deg) translateY(2px);
+      }
+      .logo-title .ch:nth-child(even) {
+        transform: rotate(4deg) translateY(-1px);
+      }
+      .logo-title .c1 {
+        color: #ffd028;
+      }
+      .logo-title .c2 {
+        color: #ff5525;
+      }
+      .logo-title .c3 {
+        color: #42c7ff;
+      }
+      .logo-title .c4 {
+        color: #6edb5f;
+      }
+      .logo-title .c5 {
+        color: #ff9d22;
+      }
+      .logo-title .sub {
+        display: inline-block;
+        margin-left: 6px;
+        transform: translateY(-8px) rotate(-8deg);
+      }
+      .logo-title .sub .ch {
+        font-size: clamp(28px, 4.1vw, 60px);
+      }
+      .logo-caption {
+        position: fixed;
+        left: 50%;
+        top: clamp(118px, 15vw, 180px);
+        transform: translateX(-50%);
+        color: rgba(236, 244, 255, 0.62);
+        font: 600 clamp(12px, 1.35vw, 18px) / 1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0.12em;
+        text-shadow: 0 0 10px rgba(200, 226, 255, 0.5);
+        pointer-events: none;
+        user-select: none;
+        z-index: 6;
+        animation: captionFade 2.9s ease-in-out infinite;
+      }
+      body.intro-dialog-mask .logo-title,
+      body.intro-dialog-mask .logo-caption {
+        opacity: 0;
+      }
+      @keyframes logoFloat {
+        0% {
+          filter: blur(0px) drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+          opacity: 0.98;
+        }
+        50% {
+          filter: blur(1.15px) drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
+          opacity: 0.92;
+        }
+        100% {
+          filter: blur(0px) drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+          opacity: 0.98;
+        }
+      }
+      @keyframes captionFade {
+        0% {
+          opacity: 0.2;
+          filter: blur(0.4px);
+        }
+        50% {
+          opacity: 0.64;
+          filter: blur(0px);
+        }
+        100% {
+          opacity: 0.24;
+          filter: blur(0.3px);
+        }
+      }
+      .dialog {
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: translate(-50%, -120%);
+        max-width: 230px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 2px solid rgba(35, 35, 35, 0.95);
+        background: rgba(255, 255, 255, 0.97);
+        color: #1a1a1a;
+        font: 14px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+        z-index: 5;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 120ms linear;
+        display: none;
+      }
+      .dialog.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .dialog::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -10px;
+        width: 16px;
+        height: 16px;
+        background: rgba(255, 255, 255, 0.97);
+        border-right: 2px solid rgba(35, 35, 35, 0.95);
+        border-bottom: 2px solid rgba(35, 35, 35, 0.95);
+        transform: translateX(-50%) rotate(45deg);
+      }
+      .dialog-text {
+        white-space: pre-line;
+      }
+      .dialog-page {
+        margin-top: 6px;
+        font-size: 11px;
+        color: #5d5d5d;
+        text-align: right;
+        user-select: none;
+      }
+      .custom-cursor {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 40px;
+        height: 40px;
+        transform: translate(-6px, -4px);
+        pointer-events: none;
+        z-index: 999;
+        display: none;
+        image-rendering: pixelated;
+      }
+      .custom-cursor.bent {
+        transform: translate(-8px, -2px) rotate(-22deg) scale(0.9);
+      }
+      .anchor-popup {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: min(68vw, 620px);
+        z-index: 30;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 130ms ease;
+      }
+      .anchor-popup.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .anchor-popup-frame {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .anchor-popup-close {
+        display: none;
+      }
+      .anchor-popup-end {
+        position: absolute;
+        left: 2%;
+        bottom: 1.8%;
+        width: 16%;
+        height: 5.6%;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+      .anchor-popup-type {
+        position: absolute;
+        left: 31.8%;
+        top: 24%;
+        width: 60.2%;
+        height: 58%;
+        color: #3e3e44;
+        font: 700 clamp(10px, 0.95vw, 15px) / 1.52 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0.01em;
+        white-space: pre-line;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .anchor-popup-folder-view {
+        position: absolute;
+        left: 31.5%;
+        top: 27%;
+        width: 60%;
+        height: 48%;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(18px, 3.2vw, 42px);
+      }
+      .folder-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        border: 0;
+        background: transparent;
+      }
+      .folder-thumb {
+        width: clamp(62px, 7.2vw, 96px);
+        height: clamp(62px, 7.2vw, 96px);
+        object-fit: contain;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.18));
+      }
+      .folder-label {
+        font: 700 clamp(12px, 1.25vw, 18px) / 1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0.03em;
+        color: #3b3f54;
+        text-transform: lowercase;
+      }
+      .anchor-popup.folders-mode .anchor-popup-type {
+        display: none;
+      }
+      .anchor-popup.folders-mode .anchor-popup-folder-view {
+        display: flex;
+      }
+      .anchor-popup.folders-mode .anchor-popup-explore {
+        display: none;
+      }
+      .anchor-popup-explore {
+        position: absolute;
+        right: 5.15%;
+        bottom: 14.4%;
+        width: 8.9%;
+        height: 5.2%;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+      .gallery-pop {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        display: none;
+        pointer-events: none;
+      }
+      .gallery-pop::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.26);
+        backdrop-filter: blur(6px) saturate(1.05);
+        -webkit-backdrop-filter: blur(6px) saturate(1.05);
+        opacity: 0;
+        transition: opacity 180ms ease;
+        pointer-events: none;
+      }
+      .gallery-pop.show {
+        display: block;
+        pointer-events: auto;
+      }
+      .gallery-pop.show::before {
+        opacity: 1;
+      }
+      .gallery-stage {
+        position: fixed;
+        left: 50%;
+        top: 52%;
+        width: min(96vw, 1480px);
+        height: min(72vh, 680px);
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(10px, 1.6vw, 22px);
+      }
+      .gallery-close {
+        position: fixed;
+        right: 18px;
+        top: 18px;
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        border: 0;
+        background: rgba(0, 0, 0, 0.48);
+        color: #fff;
+        font-size: 18px;
+        z-index: 41;
+        cursor: pointer;
+      }
+      .gallery-item {
+        position: relative;
+        flex: 0 0 clamp(170px, 22vw, 340px);
+        width: clamp(170px, 22vw, 340px);
+        max-width: clamp(170px, 22vw, 340px);
+        max-height: min(64vh, 560px);
+        height: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.28));
+        transform-origin: center;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 220ms ease, transform 260ms ease;
+        transform: translateY(14px) scale(0.96);
+      }
+      .gallery-item.g1 {
+        left: auto;
+        top: auto;
+      }
+      .gallery-item.g2 {
+        left: auto;
+        top: auto;
+      }
+      .gallery-item.g3 {
+        left: auto;
+        top: auto;
+      }
+      .gallery-item.g4 {
+        left: auto;
+        top: auto;
+      }
+      .gallery-item.g5 {
+        left: auto;
+        top: auto;
+      }
+      .gallery-item.g6 {
+        left: auto;
+        top: auto;
+      }
+      .gallery-item.show {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .installation-overlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        z-index: 45;
+      }
+      .installation-overlay.show {
+        display: block;
+      }
+      .installation-picker {
+        position: fixed;
+        left: 50%;
+        top: 52%;
+        transform: translate(-50%, -50%);
+        display: none;
+        gap: clamp(16px, 2.4vw, 32px);
+      }
+      .installation-overlay.picking .installation-picker {
+        display: flex;
+      }
+      .install-card {
+        width: min(26vw, 246px);
+        height: min(26vw, 246px);
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        color: #fff;
+        font: 700 13px/1.1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 10px 10px 12px;
+        gap: 10px;
+      }
+      .install-thumb {
+        width: 100%;
+        height: 78%;
+        object-fit: cover;
+        border-radius: 0;
+        border: 0;
+      }
+      .install-title {
+        font: 700 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0.03em;
+      }
+      .installation-player {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(76vw, 980px);
+        max-height: 78vh;
+        display: none;
+      }
+      .installation-overlay.playing .installation-player {
+        display: block;
+      }
+      .installation-player video {
+        width: 100%;
+        max-height: 78vh;
+        border-radius: 10px;
+        display: block;
+        background: #000;
+      }
+      .installation-close {
+        position: fixed;
+        right: 16px;
+        top: 16px;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        border: 0;
+        background: rgba(0, 0, 0, 0.48);
+        color: #fff;
+        font-size: 18px;
+        z-index: 46;
+      }
+      .video-focus canvas,
+      .video-focus .logo-title,
+      .video-focus .logo-caption,
+      .video-focus #dialog,
+      .video-focus #anchorPopup,
+      .video-focus #galleryPop {
+        display: none !important;
+      }
+      .audio-toggle {
+        position: fixed;
+        right: 16px;
+        top: 14px;
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.24);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        display: grid;
+        place-items: center;
+        opacity: 0.42;
+        z-index: 50;
+        transition: opacity 140ms ease, transform 140ms ease;
+      }
+      .audio-toggle:hover {
+        opacity: 0.72;
+        transform: scale(1.05);
+      }
+      .audio-toggle svg {
+        width: 18px;
+        height: 18px;
+        fill: #ffffff;
+      }
+      .audio-toggle.muted svg .wave {
+        opacity: 0.2;
+      }
+      .audio-toggle.muted svg .slash {
+        opacity: 1;
+      }
+      .audio-toggle svg .slash {
+        opacity: 0;
+      }
+      .page-link-btn {
+        position: fixed;
+        bottom: 14px;
+        width: 124px;
+        height: 42px;
+        border: 0;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #ffe878 0%, #ffd545 55%, #e6b82b 100%);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        color: #3b2f0a;
+        font: 800 13px/1 "Arial Black", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        z-index: 60;
+      }
+      .page-link-btn:hover {
+        transform: translateY(-1px);
+      }
+      .last-page-btn {
+        right: 14px;
+      }
+      .mini-menu {
+        position: fixed;
+        left: 14px;
+        top: 14px;
+        z-index: 60;
+      }
+      .mini-menu-trigger {
+        width: 56px;
+        height: 56px;
+        border: 0;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #5ed4ff 0%, #2aa6ee 55%, #1f82cc 100%);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        color: #fff;
+        font: 800 12px/1 "Arial Black", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .mini-menu-panel {
+        margin-top: 8px;
+        width: 140px;
+        border-radius: 10px;
+        background: rgba(34, 38, 46, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.34);
+        padding: 6px 0;
+        display: none;
+      }
+      .mini-menu.open .mini-menu-panel {
+        display: block;
+      }
+      .mini-menu-item {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: #f0f5ff;
+        text-align: left;
+        padding: 10px 14px;
+        font: 700 14px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0.02em;
+      }
+      .mini-menu-item:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+    </style>
+  </head>
+  <body>
+    <audio id="bgm" src="./bgm-spot4.mp4" loop preload="auto" autoplay muted playsinline></audio>
+    <div id="miniMenu" class="mini-menu">
+      <button id="miniMenuTrigger" class="mini-menu-trigger" aria-label="open menu">menu</button>
+      <div id="miniMenuPanel" class="mini-menu-panel" aria-hidden="true">
+        <button class="mini-menu-item" data-spot="spot1">spot1</button>
+        <button class="mini-menu-item" data-spot="spot2">spot2</button>
+        <button class="mini-menu-item" data-spot="spot3">spot3</button>
+        <button class="mini-menu-item" data-link="spot4-page">spot4</button>
+        <button class="mini-menu-item" data-link="about-yi">about Yi</button>
+      </div>
+    </div>
+    <img id="bgImage" class="bg-image" src="./bg-spot4.png" alt="background" />
+    <canvas id="stage"></canvas>
+    <div class="logo-title" aria-hidden="true">
+      <span class="word">
+        <span class="ch c1">Y</span><span class="ch c2">i</span><span class="ch c3">`</span><span class="ch c5">s</span>
+      </span>
+      <span class="word">
+        <span class="ch c4">S</span><span class="ch c1">e</span><span class="ch c2">c</span><span class="ch c3">r</span><span class="ch c5">e</span><span class="ch c4">t</span>
+      </span>
+      <span class="word sub">
+        <span class="ch c1">B</span><span class="ch c2">a</span><span class="ch c3">s</span><span class="ch c4">e</span>
+      </span>
+    </div>
+    <div class="logo-caption" aria-hidden="true">Scroll to begin your adventure</div>
+    <div id="dialog" class="dialog" role="button" aria-label="next dialog page">
+      <div id="dialogText" class="dialog-text"></div>
+      <div id="dialogPage" class="dialog-page"></div>
+    </div>
+    <img id="customCursor" class="custom-cursor" alt="" />
+    <div id="anchorPopup" class="anchor-popup" aria-hidden="true">
+      <img class="anchor-popup-frame" src="./popup-frame.png" alt="popup frame" />
+      <div id="anchorPopupType" class="anchor-popup-type"></div>
+      <div class="anchor-popup-folder-view" aria-hidden="true">
+        <button class="folder-card" data-folder="print">
+          <img class="folder-thumb" src="./folder-print.png" alt="print folder icon" />
+          <div class="folder-label">print</div>
+        </button>
+        <button class="folder-card" data-folder="installation">
+          <img class="folder-thumb" src="./folder-installation.png" alt="installation folder icon" />
+          <div class="folder-label">installation</div>
+        </button>
+      </div>
+      <button id="anchorPopupExplore" class="anchor-popup-explore" aria-label="open explore gallery"></button>
+      <button id="anchorPopupClose" class="anchor-popup-close" aria-label="close popup">×</button>
+      <button id="anchorPopupEnd" class="anchor-popup-end" aria-label="end conversation"></button>
+    </div>
+    <div id="galleryPop" class="gallery-pop" aria-hidden="true">
+      <button id="galleryClose" class="gallery-close" aria-label="close gallery">×</button>
+      <div class="gallery-stage">
+        <img class="gallery-item g1" src="./print-1.png" alt="print image 1" />
+        <img class="gallery-item g2" src="./print-2.png" alt="print image 2" />
+        <img class="gallery-item g3" src="./print-3.png" alt="print image 3" />
+        <img class="gallery-item g4" src="./print-4.png" alt="print image 4" />
+      </div>
+    </div>
+    <div id="installationOverlay" class="installation-overlay" aria-hidden="true">
+      <button id="installationClose" class="installation-close" aria-label="close installation videos">×</button>
+      <div class="installation-picker">
+        <button class="install-card" data-video="1">
+          <img class="install-thumb" src="./installation-preview-1.png" alt="video 1 preview" />
+          <span class="install-title">video 1</span>
+        </button>
+        <button class="install-card" data-video="2">
+          <img class="install-thumb" src="./installation-preview-2.png" alt="video 2 preview" />
+          <span class="install-title">video 2</span>
+        </button>
+      </div>
+      <div class="installation-player">
+        <video id="installationPlayer" controls playsinline></video>
+      </div>
+    </div>
+    <button id="audioToggle" class="audio-toggle" aria-label="toggle audio">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 10h4l5-4v12l-5-4H3z"></path>
+        <path class="wave" d="M16 8a5 5 0 010 8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"></path>
+        <path class="wave" d="M18.5 5.5a8.5 8.5 0 010 13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"></path>
+        <path class="slash" d="M5 5l14 14" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"></path>
+      </svg>
+    </button>
+    <button id="lastPageBtn" class="page-link-btn last-page-btn" aria-label="go to previous page">last page</button>
+    <script>
+      const canvas = document.getElementById("stage");
+      const bgmEl = document.getElementById("bgm");
+      const audioToggleEl = document.getElementById("audioToggle");
+      const lastPageBtnEl = document.getElementById("lastPageBtn");
+      const miniMenuEl = document.getElementById("miniMenu");
+      const miniMenuTriggerEl = document.getElementById("miniMenuTrigger");
+      const miniMenuPanelEl = document.getElementById("miniMenuPanel");
+      const bgImage = document.getElementById("bgImage");
+      const dialogEl = document.getElementById("dialog");
+      const dialogTextEl = document.getElementById("dialogText");
+      const dialogPageEl = document.getElementById("dialogPage");
+      const customCursorEl = document.getElementById("customCursor");
+      const anchorPopupEl = document.getElementById("anchorPopup");
+      const anchorPopupCloseEl = document.getElementById("anchorPopupClose");
+      const anchorPopupEndEl = document.getElementById("anchorPopupEnd");
+      const anchorPopupTypeEl = document.getElementById("anchorPopupType");
+      const anchorPopupExploreEl = document.getElementById("anchorPopupExplore");
+      const anchorPopupFrameEl = anchorPopupEl.querySelector(".anchor-popup-frame");
+      const popupFrameDefaultSrc = anchorPopupFrameEl.getAttribute("src") || "./popup-frame.png";
+      const popupFrameFoldersSrc = "./popup-frame-no-explore.png";
+      const folderCardEls = Array.from(anchorPopupEl.querySelectorAll(".folder-card"));
+      const galleryPopEl = document.getElementById("galleryPop");
+      const galleryCloseEl = document.getElementById("galleryClose");
+      const galleryItemEls = Array.from(galleryPopEl.querySelectorAll(".gallery-item"));
+      const installationOverlayEl = document.getElementById("installationOverlay");
+      const installationCloseEl = document.getElementById("installationClose");
+      const installationPlayerEl = document.getElementById("installationPlayer");
+      const installCardEls = Array.from(installationOverlayEl.querySelectorAll(".install-card"));
+      const ctx = canvas.getContext("2d");
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      let w = 0;
+      let h = 0;
+      let cx = 0;
+      let cy = 0;
+      let unit = 1;
+
+      const camera = { fov: 760, zOffset: 220 };
+      const models = [];
+      const renderPoints = [];
+
+      const state = {
+        scale: 0.62,
+        targetScale: 0.62,
+        pitch: 0.09,
+        targetPitch: 0.09,
+        yaw: 0,
+        yawVelocity: 0,
+        autoSpin: 0.011,
+      };
+
+      const drag = {
+        active: false,
+        lastX: 0,
+        lastY: 0,
+      };
+      const scrollFx = {
+        energy: 0,
+        phase: 0,
+        tumble: 0,
+        tumbleVelocity: 0,
+      };
+      const swarmFx = {
+        energy: 0,
+      };
+      const landing = {
+        levels: [-120, 0, 120],
+        yTarget: 0,
+        yCurrent: 0,
+      };
+      const dialogState = {
+        page: 0,
+        lines: ["so familiar....", "Let`s explore it.."],
+        x: 0,
+        y: 0,
+        visible: false,
+        started: false,
+        completed: false,
+        nextAt: 0,
+      };
+      const introDialogState = {
+        dismissed: true,
+        started: true,
+        visible: false,
+        stepIndex: -1,
+        nextAt: 0,
+        protectUntil: 0,
+        speaker: 0,
+        text: "",
+        steps: [
+          { speaker: 0, text: "Omg how you guys find here...", duration: 1700 },
+          { speaker: 1, text: "Shhhhh....", duration: 1200 },
+          { speaker: 1, text: "Since you`re here", duration: 1300 },
+          { speaker: 1, text: "you`re part of us now", duration: 1700 },
+          { speaker: 2, text: "Follow us....", duration: 2600 },
+        ],
+      };
+      const lockState = {
+        freezePose: false,
+      };
+      const interactionState = {
+        unlocked: false,
+      };
+      const anchorPoints = [
+        { x: 235, y: 470 },
+        { x: 132, y: 700 },
+        { x: 302, y: 830 },
+      ];
+
+      let startAt = performance.now();
+      let lastFrameAt = startAt;
+      let cursorBendTimer = null;
+      let popupFrameRatio = 920 / 538;
+      let galleryTimers = [];
+      const characterHeadPoints = [];
+      let lastScrollY = 0;
+      const installationState = {
+        resumeBgm: false,
+      };
+      const audioState = {
+        enabled: true,
+        blocked: false,
+        userActivated: false,
+      };
+      const typewriterState = {
+        lines: [
+          "Hello... This is supplement fairy",
+          "This is a world completely be whitewashed...",
+          "Follow me to explore in Sweet Horror world",
+        ],
+        output: [],
+        lineIndex: 0,
+        charIndex: 0,
+        running: false,
+        nextAt: 0,
+      };
+
+      function setCursorPosition(clientX, clientY) {
+        customCursorEl.style.left = `${clientX}px`;
+        customCursorEl.style.top = `${clientY}px`;
+        if (customCursorEl.style.display !== "block") {
+          customCursorEl.style.display = "block";
+        }
+      }
+
+      function updateAudioToggle() {
+        audioToggleEl.classList.toggle("muted", !audioState.enabled);
+      }
+
+      function setMiniMenuOpen(open) {
+        miniMenuEl.classList.toggle("open", open);
+        miniMenuPanelEl.setAttribute("aria-hidden", open ? "false" : "true");
+      }
+
+      function scrollToAnchor(index) {
+        const point = anchorPoints[index];
+        if (!point) return;
+        const rect = bgImage.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const pageY = window.scrollY + rect.top + (point.y / 1024) * rect.height;
+        const targetTop = Math.max(
+          0,
+          Math.min(
+            document.body.scrollHeight - window.innerHeight,
+            pageY - window.innerHeight * 0.5
+          )
+        );
+        window.scrollTo({ top: targetTop, behavior: "smooth" });
+      }
+
+      async function tryPlayAudio() {
+        if (!audioState.enabled) return;
+        bgmEl.volume = 0.66;
+        bgmEl.muted = !audioState.userActivated;
+        try {
+          await bgmEl.play();
+          audioState.blocked = false;
+        } catch (_err) {
+          audioState.blocked = true;
+        }
+      }
+
+      function unlockAudioFromGesture() {
+        if (audioState.userActivated) return;
+        audioState.userActivated = true;
+        if (!audioState.enabled) return;
+        bgmEl.muted = false;
+        tryPlayAudio();
+      }
+
+      function setAudioEnabled(enabled) {
+        audioState.enabled = enabled;
+        if (enabled) {
+          bgmEl.muted = !audioState.userActivated;
+          tryPlayAudio();
+        } else {
+          bgmEl.pause();
+          bgmEl.muted = true;
+        }
+        updateAudioToggle();
+      }
+
+      function bendCursorOnce() {
+        customCursorEl.classList.add("bent");
+        if (cursorBendTimer) clearTimeout(cursorBendTimer);
+        cursorBendTimer = setTimeout(() => {
+          customCursorEl.classList.remove("bent");
+        }, 110);
+      }
+
+      function prepareCustomCursor() {
+        const raw = new Image();
+        raw.src = "./cursor-hand.png";
+        raw.onload = () => {
+          const off = document.createElement("canvas");
+          off.width = raw.width;
+          off.height = raw.height;
+          const octx = off.getContext("2d");
+          octx.drawImage(raw, 0, 0);
+          const image = octx.getImageData(0, 0, off.width, off.height);
+          const data = image.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const isGreen = g > 40 && g > r * 1.18 && g > b * 1.18;
+            if (isGreen) {
+              data[i + 3] = 0;
+            }
+          }
+          octx.putImageData(image, 0, 0);
+          customCursorEl.src = off.toDataURL("image/png");
+        };
+      }
+
+      function syncPageHeight() {
+        if (!bgImage.naturalWidth || !bgImage.naturalHeight) return;
+        const renderWidth = bgImage.clientWidth || window.innerWidth;
+        const scaledHeight = (renderWidth * bgImage.naturalHeight) / bgImage.naturalWidth;
+        document.body.style.minHeight = `${Math.max(window.innerHeight, scaledHeight)}px`;
+      }
+
+      function updateLandingLevels() {
+        // Keep characters in the current viewport lower-middle area.
+        landing.levels = [h * 0.16, h * 0.24, h * 0.32];
+      }
+
+      function resize() {
+        w = window.innerWidth;
+        h = window.innerHeight;
+        cx = w * 0.5;
+        cy = h * 0.5;
+        unit = Math.min(w, h);
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function project(v) {
+        const denom = camera.fov + v.z + camera.zOffset;
+        if (denom <= 1) return null;
+        const f = camera.fov / denom;
+        return { x: cx + v.x * f, y: cy + v.y * f, f };
+      }
+
+      function rotate3(v, rx, ry) {
+        const cosX = Math.cos(rx);
+        const sinX = Math.sin(rx);
+        const cosY = Math.cos(ry);
+        const sinY = Math.sin(ry);
+        const y1 = v.y * cosX - v.z * sinX;
+        const z1 = v.y * sinX + v.z * cosX;
+        const x2 = v.x * cosY + z1 * sinY;
+        const z2 = -v.x * sinY + z1 * cosY;
+        return { x: x2, y: y1, z: z2 };
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function smoothstep01(x) {
+        const t = Math.max(0, Math.min(1, x));
+        return t * t * (3 - 2 * t);
+      }
+
+      function getLandingTargetByScroll(progress) {
+        const l0 = landing.levels[0];
+        const l1 = landing.levels[1];
+        const l2 = landing.levels[2];
+
+        if (progress < 0.14) return l0;
+        if (progress < 0.44) {
+          const t = smoothstep01((progress - 0.14) / 0.3);
+          return lerp(l0, l1, t);
+        }
+        if (progress < 0.6) return l1;
+        if (progress < 0.9) {
+          const t = smoothstep01((progress - 0.6) / 0.3);
+          return lerp(l1, l2, t);
+        }
+        return l2;
+      }
+
+      function drawBackground() {
+        // Keep canvas fully transparent so the page background image is visible.
+        ctx.clearRect(0, 0, w, h);
+      }
+
+      function drawAnchorDots(active) {
+        for (const p of getAnchorScreenPoints()) {
+          const x = p.x;
+          const y = p.y;
+          if (y < -60 || y > h + 60 || x < -60 || x > w + 60) continue;
+
+          const glow = ctx.createRadialGradient(x, y, 0, x, y, unit * 0.03);
+          glow.addColorStop(0, `rgba(255, 255, 255, ${active ? 0.95 : 0.62})`);
+          glow.addColorStop(1, "rgba(255, 255, 255, 0)");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(x, y, unit * 0.028, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = `rgba(255, 255, 255, ${active ? 1 : 0.85})`;
+          ctx.beginPath();
+          ctx.arc(x, y, Math.max(2.2, unit * 0.0048), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function getAnchorScreenPoints() {
+        const rect = bgImage.getBoundingClientRect();
+        if (!rect.width || !rect.height) return [];
+        return anchorPoints.map((p, index) => ({
+          index,
+          x: rect.left + (p.x / 470) * rect.width,
+          y: rect.top + (p.y / 1024) * rect.height,
+        }));
+      }
+
+      function findAnchorHit(clientX, clientY, radius = 28) {
+        const r2 = radius * radius;
+        for (const p of getAnchorScreenPoints()) {
+          const dx = clientX - p.x;
+          const dy = clientY - p.y;
+          if (dx * dx + dy * dy <= r2) return p;
+        }
+        return null;
+      }
+
+      function openPopupAtAnchor() {
+        if (anchorPopupFrameEl.getAttribute("src") !== popupFrameDefaultSrc) {
+          anchorPopupFrameEl.src = popupFrameDefaultSrc;
+        }
+        const popupW = Math.min(window.innerWidth * 0.68, 620);
+        const popupH = popupW / popupFrameRatio;
+        const x = (window.innerWidth - popupW) * 0.5;
+        const y = (window.innerHeight - popupH) * 0.5;
+        anchorPopupEl.style.width = `${popupW}px`;
+        anchorPopupEl.style.left = `${x}px`;
+        anchorPopupEl.style.top = `${y}px`;
+        anchorPopupEl.classList.remove("folders-mode");
+        anchorPopupEl.classList.add("show");
+        anchorPopupEl.setAttribute("aria-hidden", "false");
+        startTypewriter(performance.now());
+      }
+
+      function closeAnchorPopup() {
+        anchorPopupEl.classList.remove("show");
+        anchorPopupEl.classList.remove("folders-mode");
+        anchorPopupEl.setAttribute("aria-hidden", "true");
+        stopTypewriter();
+        if (anchorPopupFrameEl.getAttribute("src") !== popupFrameDefaultSrc) {
+          anchorPopupFrameEl.src = popupFrameDefaultSrc;
+        }
+      }
+
+      function openFolderMenuPopup() {
+        if (anchorPopupFrameEl.getAttribute("src") !== popupFrameFoldersSrc) {
+          anchorPopupFrameEl.src = popupFrameFoldersSrc;
+        }
+        const popupW = Math.min(window.innerWidth * 0.68, 620);
+        const popupH = popupW / popupFrameRatio;
+        const x = (window.innerWidth - popupW) * 0.5;
+        const y = (window.innerHeight - popupH) * 0.5;
+        anchorPopupEl.style.width = `${popupW}px`;
+        anchorPopupEl.style.left = `${x}px`;
+        anchorPopupEl.style.top = `${y}px`;
+        stopTypewriter();
+        anchorPopupEl.classList.add("show", "folders-mode");
+        anchorPopupEl.setAttribute("aria-hidden", "false");
+      }
+
+      function openGalleryPop() {
+        galleryPopEl.classList.add("show");
+        galleryPopEl.setAttribute("aria-hidden", "false");
+        for (const item of galleryItemEls) item.classList.remove("show");
+        for (const id of galleryTimers) clearTimeout(id);
+        galleryTimers = galleryItemEls.map((item, idx) =>
+          setTimeout(() => {
+            item.classList.add("show");
+          }, 110 + idx * 180)
+        );
+      }
+
+      function closeGalleryPop() {
+        galleryPopEl.classList.remove("show");
+        galleryPopEl.setAttribute("aria-hidden", "true");
+        for (const id of galleryTimers) clearTimeout(id);
+        galleryTimers = [];
+        for (const item of galleryItemEls) item.classList.remove("show");
+      }
+
+      function openInstallationPicker() {
+        closeAnchorPopup();
+        closeGalleryPop();
+        installationState.resumeBgm = audioState.enabled && !bgmEl.paused;
+        bgmEl.pause();
+        document.body.classList.add("video-focus");
+        installationOverlayEl.classList.add("show", "picking");
+        installationOverlayEl.classList.remove("playing");
+        installationOverlayEl.setAttribute("aria-hidden", "false");
+        installationPlayerEl.pause();
+        installationPlayerEl.removeAttribute("src");
+      }
+
+      function playInstallationVideo(index) {
+        bgmEl.pause();
+        installationOverlayEl.classList.remove("picking");
+        installationOverlayEl.classList.add("playing");
+        installationPlayerEl.src = index === 2 ? "./installation-2.mov" : "./installation-1.mov";
+        installationPlayerEl.play().catch(() => {});
+      }
+
+      function closeInstallationOverlay() {
+        installationOverlayEl.classList.remove("show", "picking", "playing");
+        installationOverlayEl.setAttribute("aria-hidden", "true");
+        installationPlayerEl.pause();
+        installationPlayerEl.removeAttribute("src");
+        document.body.classList.remove("video-focus");
+        if (installationState.resumeBgm && audioState.enabled) {
+          tryPlayAudio();
+        }
+        installationState.resumeBgm = false;
+      }
+
+      function startTypewriter(now) {
+        typewriterState.output = [""];
+        typewriterState.lineIndex = 0;
+        typewriterState.charIndex = 0;
+        typewriterState.running = true;
+        typewriterState.nextAt = now + 220;
+        anchorPopupTypeEl.textContent = "";
+      }
+
+      function stopTypewriter() {
+        typewriterState.running = false;
+      }
+
+      function revealTypewriterInstant() {
+        typewriterState.running = false;
+        typewriterState.output = [...typewriterState.lines];
+        typewriterState.lineIndex = typewriterState.lines.length;
+        typewriterState.charIndex = 0;
+        anchorPopupTypeEl.textContent = typewriterState.output.join("\n");
+      }
+
+      function updateTypewriter(now) {
+        if (!typewriterState.running) return;
+        if (now < typewriterState.nextAt) return;
+        if (typewriterState.lineIndex >= typewriterState.lines.length) {
+          typewriterState.running = false;
+          return;
+        }
+
+        const currentLine = typewriterState.lines[typewriterState.lineIndex];
+        if (typewriterState.charIndex < currentLine.length) {
+          typewriterState.output[typewriterState.lineIndex] += currentLine[typewriterState.charIndex];
+          typewriterState.charIndex += 1;
+          typewriterState.nextAt = now + 34;
+        } else {
+          typewriterState.lineIndex += 1;
+          typewriterState.charIndex = 0;
+          if (typewriterState.lineIndex < typewriterState.lines.length) {
+            typewriterState.output.push("");
+          }
+          typewriterState.nextAt = now + 380;
+        }
+        anchorPopupTypeEl.textContent = typewriterState.output.join("\n");
+      }
+
+      function updateMainSpotDialog(now, canShow) {
+        if (dialogState.completed) {
+          dialogState.visible = false;
+          return;
+        }
+        if (!canShow) return;
+        if (!dialogState.started) {
+          dialogState.started = true;
+          dialogState.page = 0;
+          dialogState.visible = true;
+          dialogState.nextAt = now + 1500;
+          return;
+        }
+        if (dialogState.nextAt && now >= dialogState.nextAt) {
+          if (dialogState.page < dialogState.lines.length - 1) {
+            dialogState.page += 1;
+            dialogState.nextAt = now + 1650;
+          } else {
+            dialogState.visible = false;
+            dialogState.completed = true;
+          }
+        }
+      }
+
+      function buildVoxelModel(img) {
+        const voxels = [];
+        const off = document.createElement("canvas");
+        const octx = off.getContext("2d");
+        off.width = img.width;
+        off.height = img.height;
+        octx.drawImage(img, 0, 0);
+        const data = octx.getImageData(0, 0, img.width, img.height).data;
+
+        const maxH = unit * 0.43;
+        const scale = maxH / img.height;
+        const step = 4;
+        const thickness = 46;
+        const layers = 7;
+        const zStart = -thickness * 0.5;
+        const zStep = thickness / (layers - 1);
+
+        for (let y = 0; y < img.height; y += step) {
+          for (let x = 0; x < img.width; x += step) {
+            const i = (y * img.width + x) * 4;
+            const a = data[i + 3];
+            if (a < 80) continue;
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            const px = (x - img.width * 0.5) * scale;
+            const py = (y - img.height * 0.5) * scale;
+            for (let l = 0; l < layers; l++) {
+              const pz = zStart + l * zStep;
+              const edgeShade = 0.7 + 0.3 * (1 - Math.abs(l - (layers - 1) * 0.5) / (layers * 0.5));
+              voxels.push({
+                x: px,
+                y: py,
+                z: pz,
+                r,
+                g,
+                b,
+                a: a / 255,
+                edgeShade,
+              });
+            }
+          }
+        }
+
+        return {
+          voxels,
+          depth: thickness,
+          width: img.width * scale,
+          height: img.height * scale,
+        };
+      }
+
+      function drawModels(t) {
+        if (!models.length) return;
+        characterHeadPoints.length = models.length;
+        state.scale = lerp(state.scale, state.targetScale, 0.08);
+        state.pitch = lerp(state.pitch, state.targetPitch, 0.08);
+        const scrollMax = Math.max(1, document.body.scrollHeight - window.innerHeight);
+        const scrollProgress = Math.max(0, Math.min(1, window.scrollY / scrollMax));
+        landing.yTarget = getLandingTargetByScroll(scrollProgress);
+        landing.yCurrent = lerp(landing.yCurrent, landing.yTarget, 0.1);
+
+        const minStopDist = Math.min(
+          Math.abs(landing.yCurrent - landing.levels[0]),
+          Math.abs(landing.yCurrent - landing.levels[1]),
+          Math.abs(landing.yCurrent - landing.levels[2])
+        );
+        const stopLock = Math.max(0, 1 - minStopDist / (h * 0.045));
+        const interactionEnergy = Math.max(scrollFx.energy, swarmFx.energy);
+        const frontLock = stopLock * (1 - Math.min(1, interactionEnergy * 1.25));
+
+        const motionEnabled = interactionState.unlocked;
+        const pulseScale = motionEnabled
+          ? 1 + Math.sin(scrollFx.phase) * 0.14 * scrollFx.energy * (1 - frontLock)
+          : 1;
+        const animatedScale = state.scale * pulseScale;
+        const spinBoost = motionEnabled ? scrollFx.energy * 0.085 * (1 - frontLock) : 0;
+        const autoSpin = motionEnabled ? state.autoSpin : 0;
+        state.yaw += autoSpin + state.yawVelocity + spinBoost;
+        state.yawVelocity *= 0.94;
+
+        const spacing = Math.max(unit * 0.22, w * 0.14);
+        const centerIndex = (models.length - 1) * 0.5;
+        const middleTargetDist = Math.abs(landing.yCurrent - landing.levels[1]);
+        lockState.freezePose = middleTargetDist < h * 0.025;
+        const freezeLock = lockState.freezePose ? 1 : 0;
+        const scatterRadius = motionEnabled
+          ? unit * 0.06 * swarmFx.energy * (1 - frontLock) * (1 - freezeLock)
+          : 0;
+        const middleIndex = Math.round(centerIndex);
+        const middleStop = Math.max(0, 1 - middleTargetDist / (h * 0.04));
+
+        for (let i = 0; i < models.length; i++) {
+          const model = models[i];
+          const bob = motionEnabled
+            ? Math.sin(t * 1.8 + i * 1.37) * 12 * (1 - frontLock * 0.8) * (1 - freezeLock)
+            : 0;
+          const baseX = (i - centerIndex) * spacing;
+          const edgePull = motionEnabled
+            ? (i - centerIndex) * (unit * 0.07 * swarmFx.energy * (1 - frontLock) * (1 - freezeLock))
+            : 0;
+          const scatterX =
+            Math.cos(t * 2.1 + i * 1.93) * scatterRadius +
+            (i - centerIndex) * scatterRadius * 0.26 +
+            edgePull;
+          const scatterY = Math.sin(t * 2.5 + i * 2.27) * scatterRadius * 0.45;
+          const scatterZ = Math.cos(t * 2 + i * 1.31) * scatterRadius * 1.1;
+          const worldOffsetX = baseX + scatterX;
+          const worldOffsetY = scatterY + landing.yCurrent;
+          const worldOffsetZ = scatterZ;
+          const localYaw = motionEnabled
+            ? (state.yaw + i * 0.18) * (1 - frontLock) * (1 - freezeLock)
+            : 0;
+          const localPitch = motionEnabled
+            ? (state.pitch + scrollFx.tumble + i * 0.04) * (1 - frontLock) * (1 - freezeLock)
+            : 0;
+          const headAnchor = rotate3({ x: 0, y: -model.height * animatedScale * 0.56, z: 0 }, localPitch, localYaw);
+          const headWorld = {
+            x: headAnchor.x + worldOffsetX,
+            y: headAnchor.y + bob + worldOffsetY,
+            z: headAnchor.z + 90 + worldOffsetZ,
+          };
+          const headPr = project(headWorld);
+          if (headPr) {
+            characterHeadPoints[i] = { x: headPr.x, y: headPr.y - unit * 0.02 };
+            if (i === middleIndex) {
+              dialogState.x = headPr.x;
+              dialogState.y = headPr.y - unit * 0.02;
+            }
+          }
+          renderPoints.length = 0;
+
+          for (const v of model.voxels) {
+            const scaled = {
+              x: v.x * animatedScale,
+              y: v.y * animatedScale,
+              z: v.z * animatedScale,
+            };
+            const rot = rotate3(scaled, localPitch, localYaw);
+            const world = { x: rot.x + worldOffsetX, y: rot.y + bob + worldOffsetY, z: rot.z + 90 + worldOffsetZ };
+            const pr = project(world);
+            if (!pr) continue;
+
+            const depthLight = 0.68 + (-rot.z / (model.depth * animatedScale + 1)) * 0.16;
+            const shade = Math.max(0.74, Math.min(1.48, depthLight * v.edgeShade * 1.16));
+            renderPoints.push({
+              x: pr.x,
+              y: pr.y,
+              z: world.z,
+              s: Math.max(1, 2.25 * pr.f * animatedScale),
+              r: Math.min(255, v.r * shade + 18),
+              g: Math.min(255, v.g * shade + 18),
+              b: Math.min(255, v.b * shade + 18),
+              a: v.a,
+            });
+          }
+
+          renderPoints.sort((a, b) => b.z - a.z);
+
+          const glow = ctx.createRadialGradient(
+            cx + worldOffsetX,
+            cy + bob,
+            0,
+            cx + worldOffsetX,
+            cy + bob,
+            unit * 0.18
+          );
+          glow.addColorStop(0, "rgba(180, 230, 255, 0.18)");
+          glow.addColorStop(1, "rgba(180, 230, 255, 0)");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(cx + worldOffsetX, cy + bob, unit * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+
+          for (const p of renderPoints) {
+            ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`;
+            ctx.fillRect(p.x, p.y, p.s, p.s);
+          }
+        }
+      }
+
+      function renderDialog() {
+        const introActive = introDialogState.visible && !introDialogState.dismissed;
+        if (introActive) {
+          const p =
+            characterHeadPoints[introDialogState.speaker] || {
+              x: cx + (introDialogState.speaker - 1) * unit * 0.2,
+              y: cy + unit * 0.16,
+            };
+          dialogTextEl.textContent = introDialogState.text;
+          dialogPageEl.textContent = "";
+          dialogPageEl.style.display = "none";
+          dialogEl.style.left = `${p.x}px`;
+          dialogEl.style.top = `${p.y}px`;
+          dialogEl.classList.add("show");
+          return;
+        }
+
+        dialogTextEl.textContent = dialogState.lines[dialogState.page];
+        dialogPageEl.textContent = "";
+        dialogPageEl.style.display = "none";
+        dialogEl.style.left = `${dialogState.x}px`;
+        dialogEl.style.top = `${dialogState.y}px`;
+        dialogEl.classList.toggle("show", dialogState.visible);
+      }
+
+      function dismissIntroDialog() {
+        if (performance.now() < introDialogState.protectUntil) return;
+        introDialogState.dismissed = true;
+        introDialogState.visible = false;
+      }
+
+      function updateIntroDialog(now) {
+        if (introDialogState.dismissed) return;
+        if (!introDialogState.started) {
+          introDialogState.started = true;
+          introDialogState.stepIndex = 0;
+          const step = introDialogState.steps[0];
+          introDialogState.speaker = step.speaker;
+          introDialogState.text = step.text;
+          introDialogState.visible = true;
+          introDialogState.protectUntil = now + 1400;
+          introDialogState.nextAt = now + step.duration;
+          return;
+        }
+        if (now < introDialogState.nextAt) return;
+        if (introDialogState.stepIndex >= introDialogState.steps.length - 1) {
+          introDialogState.visible = false;
+          introDialogState.dismissed = true;
+          return;
+        }
+        introDialogState.stepIndex += 1;
+        const step = introDialogState.steps[introDialogState.stepIndex];
+        introDialogState.speaker = step.speaker;
+        introDialogState.text = step.text;
+        introDialogState.visible = true;
+        introDialogState.nextAt = now + step.duration;
+      }
+
+      function drawIntroDialogMask() {
+        const active = introDialogState.visible && !introDialogState.dismissed;
+        document.body.classList.toggle("intro-dialog-mask", active);
+        if (!active) return;
+
+        const fallbackHeads = [
+          { x: cx - unit * 0.24, y: cy + unit * 0.18 },
+          { x: cx, y: cy + unit * 0.2 },
+          { x: cx + unit * 0.24, y: cy + unit * 0.18 },
+        ];
+        const p0 = characterHeadPoints[0] || fallbackHeads[0];
+        const p1 = characterHeadPoints[1] || fallbackHeads[1];
+        const p2 = characterHeadPoints[2] || fallbackHeads[2];
+        const clearSpot = (x, y, radius) => {
+          const g = ctx.createRadialGradient(x, y, radius * 0.06, x, y, radius);
+          g.addColorStop(0, "rgba(0, 0, 0, 1)");
+          g.addColorStop(0.78, "rgba(0, 0, 0, 0.88)");
+          g.addColorStop(1, "rgba(0, 0, 0, 0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        };
+
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.92)";
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = "destination-out";
+
+        const clusterX = (p0.x + p1.x + p2.x) / 3;
+        const clusterY = (p0.y + p1.y + p2.y) / 3 + unit * 0.09;
+        const fixedRadius = unit * 0.36;
+        clearSpot(clusterX, clusterY, fixedRadius);
+        ctx.restore();
+      }
+
+      function frame(now) {
+        const t = (now - startAt) * 0.001;
+        const dt = Math.min(0.05, Math.max(0.001, (now - lastFrameAt) * 0.001));
+        lastFrameAt = now;
+        scrollFx.energy = Math.max(0, scrollFx.energy - dt * 0.95);
+        swarmFx.energy = Math.max(0, swarmFx.energy - dt * 1.05);
+        scrollFx.phase += dt * (7 + scrollFx.energy * 20);
+        scrollFx.tumble += scrollFx.tumbleVelocity + scrollFx.energy * 0.03;
+        scrollFx.tumbleVelocity *= 0.92;
+        drawBackground();
+        const galleryShown = galleryPopEl.classList.contains("show");
+        if (!galleryShown) {
+          drawModels(t);
+        }
+        dialogEl.classList.remove("show");
+        updateTypewriter(now);
+        requestAnimationFrame(frame);
+      }
+
+      canvas.addEventListener("pointerdown", (e) => {
+        bendCursorOnce();
+        setCursorPosition(e.clientX, e.clientY);
+        if (!interactionState.unlocked) {
+          drag.active = false;
+          return;
+        }
+        drag.active = true;
+        drag.lastX = e.clientX;
+        drag.lastY = e.clientY;
+      });
+
+      window.addEventListener("pointermove", (e) => {
+        setCursorPosition(e.clientX, e.clientY);
+        if (!interactionState.unlocked) return;
+        if (!drag.active) return;
+        const dx = e.clientX - drag.lastX;
+        const dy = e.clientY - drag.lastY;
+        drag.lastX = e.clientX;
+        drag.lastY = e.clientY;
+        state.yaw += dx * 0.012;
+        state.yawVelocity = dx * 0.0009;
+        state.targetPitch = Math.max(-1.15, Math.min(1.15, state.targetPitch + dy * 0.004));
+      });
+
+      window.addEventListener("pointerup", () => {
+        drag.active = false;
+      });
+
+      window.addEventListener("pointercancel", () => {
+        drag.active = false;
+      });
+
+      window.addEventListener(
+        "pointerdown",
+        (e) => {
+          setCursorPosition(e.clientX, e.clientY);
+          bendCursorOnce();
+          unlockAudioFromGesture();
+          if (audioState.enabled && audioState.blocked) {
+            tryPlayAudio();
+          }
+        },
+        { passive: true }
+      );
+
+      function triggerScrollFx(delta) {
+        interactionState.unlocked = true;
+        dismissIntroDialog();
+        if (lockState.freezePose) return;
+        const gain = Math.min(0.5, Math.abs(delta) / 700 + 0.06);
+        const dir = delta >= 0 ? 1 : -1;
+        scrollFx.energy = Math.min(1.2, scrollFx.energy + gain);
+        scrollFx.tumbleVelocity += dir * Math.min(0.045, Math.abs(delta) / 9000 + 0.01);
+        swarmFx.energy = Math.min(1.1, swarmFx.energy + gain * 0.9);
+      }
+
+      function triggerPointerFx(moveAmount) {
+        if (!interactionState.unlocked) return;
+        if (lockState.freezePose) return;
+        const gain = Math.min(0.22, moveAmount / 420 + 0.015);
+        scrollFx.energy = Math.min(1.2, scrollFx.energy + gain * 0.7);
+        swarmFx.energy = Math.min(1.1, swarmFx.energy + gain);
+      }
+
+      window.addEventListener(
+        "wheel",
+        (e) => {
+          unlockAudioFromGesture();
+          triggerScrollFx(e.deltaY);
+          if (audioState.enabled && audioState.blocked) {
+            tryPlayAudio();
+          }
+        },
+        { passive: true }
+      );
+
+      window.addEventListener(
+        "scroll",
+        () => {
+          const delta = window.scrollY - lastScrollY;
+          lastScrollY = window.scrollY;
+          if (Math.abs(delta) < 0.5) return;
+          triggerScrollFx(delta);
+        },
+        { passive: true }
+      );
+
+      window.addEventListener(
+        "pointermove",
+        (e) => {
+          const dx = Math.abs(e.movementX || 0);
+          const dy = Math.abs(e.movementY || 0);
+          triggerPointerFx(dx + dy);
+        },
+        { passive: true }
+      );
+
+      dialogEl.addEventListener("click", () => {});
+      anchorPopupCloseEl.addEventListener("click", closeAnchorPopup);
+      anchorPopupEndEl.addEventListener("click", () => {
+        closeGalleryPop();
+        closeAnchorPopup();
+      });
+      anchorPopupExploreEl.addEventListener("click", () => {
+        stopTypewriter();
+        if (anchorPopupFrameEl.getAttribute("src") !== popupFrameFoldersSrc) {
+          anchorPopupFrameEl.src = popupFrameFoldersSrc;
+        }
+        anchorPopupEl.classList.add("folders-mode");
+      });
+      folderCardEls.forEach((el) => {
+        el.addEventListener("click", () => {
+          const folder = el.dataset.folder;
+          if (folder === "print") {
+            closeAnchorPopup();
+            openGalleryPop();
+            return;
+          }
+          if (folder === "installation") {
+            openInstallationPicker();
+          }
+        });
+      });
+      installCardEls.forEach((el) => {
+        el.addEventListener("click", () => {
+          const id = Number(el.dataset.video || "1");
+          playInstallationVideo(id);
+        });
+      });
+      installationCloseEl.addEventListener("click", () => {
+        closeInstallationOverlay();
+        openFolderMenuPopup();
+      });
+      anchorPopupEl.addEventListener("click", (e) => {
+        const target = e.target;
+        if (target === anchorPopupEl || target === anchorPopupFrameEl) {
+          revealTypewriterInstant();
+        }
+      });
+      galleryCloseEl.addEventListener("click", () => {
+        closeGalleryPop();
+        openFolderMenuPopup();
+      });
+      audioToggleEl.addEventListener("click", () => {
+        setAudioEnabled(!audioState.enabled);
+      });
+      lastPageBtnEl.addEventListener("click", () => {
+        window.location.href = "./index.html";
+      });
+      miniMenuTriggerEl.addEventListener("click", () => {
+        setMiniMenuOpen(!miniMenuEl.classList.contains("open"));
+      });
+      miniMenuPanelEl.addEventListener("click", (e) => {
+        const target = e.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (!target.matches(".mini-menu-item")) return;
+        const link = target.dataset.link || "";
+        if (link === "about-yi") {
+          window.open(
+            "https://www.instagram.com/sleeplesst_sprite_?igsh=MW51bG82cWFtY3U5eA==",
+            "_blank",
+            "noopener,noreferrer"
+          );
+          setMiniMenuOpen(false);
+          return;
+        }
+        if (link === "spot4-page") {
+          setMiniMenuOpen(false);
+          return;
+        }
+        const spot = target.dataset.spot || "";
+        const spotNo = Number(spot.replace("spot", ""));
+        if (spotNo >= 1 && spotNo <= 3) {
+          window.location.href = `./index.html?spot=${spotNo}`;
+          return;
+        }
+        setMiniMenuOpen(false);
+      });
+      window.addEventListener("pointerdown", (e) => {
+        const target = e.target;
+        if (!(target instanceof Node)) return;
+        if (!miniMenuEl.contains(target)) {
+          setMiniMenuOpen(false);
+        }
+      });
+
+      window.addEventListener("keydown", (e) => {
+        unlockAudioFromGesture();
+        if (audioState.enabled && audioState.blocked) {
+          tryPlayAudio();
+        }
+        if (e.key === "Escape") {
+          closeInstallationOverlay();
+          setMiniMenuOpen(false);
+          closeAnchorPopup();
+          closeGalleryPop();
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        resize();
+        updateLandingLevels();
+        syncPageHeight();
+      });
+
+      bgImage.onload = syncPageHeight;
+      anchorPopupFrameEl.onload = () => {
+        if (anchorPopupFrameEl.naturalWidth && anchorPopupFrameEl.naturalHeight) {
+          popupFrameRatio = anchorPopupFrameEl.naturalWidth / anchorPopupFrameEl.naturalHeight;
+        }
+      };
+      resize();
+      updateLandingLevels();
+      landing.yCurrent = landing.levels[0];
+      landing.yTarget = landing.levels[0];
+      lastScrollY = window.scrollY;
+      syncPageHeight();
+      prepareCustomCursor();
+      updateAudioToggle();
+      tryPlayAudio();
+      const sources = ["./base.png", "./char2.png", "./char3.png"];
+      Promise.all(
+        sources.map(
+          (src) =>
+            new Promise((resolve, reject) => {
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = reject;
+              img.src = src;
+            })
+        )
+      )
+        .then((images) => {
+          for (const image of images) {
+            models.push(buildVoxelModel(image));
+          }
+          requestAnimationFrame(frame);
+        })
+        .catch(() => {
+          console.warn("素材加载失败：请用本地服务器打开 index.html（不要直接 file://）");
+          requestAnimationFrame(frame);
+        });
+    </script>
+  </body>
+</html>
